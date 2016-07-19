@@ -1462,6 +1462,18 @@ drmmode_flip_handler(int fd, unsigned int frame, unsigned int tv_sec,
 	free(flipdata);
 }
 
+#if HAVE_NOTIFY_FD
+
+static void
+drmmode_notify_fd(int fd, int notify, void *data)
+{
+	ScrnInfoPtr scrn = data;
+	drmmode_ptr drmmode = drmmode_from_scrn(scrn);
+	drmHandleEvent(drmmode->fd, &drmmode->event_context);
+}
+
+#else
+
 static void
 drmmode_wakeup_handler(pointer data, int err, pointer p)
 {
@@ -1480,6 +1492,7 @@ drmmode_wakeup_handler(pointer data, int err, pointer p)
 		drmmode_handle_uevents(scrn);
 #endif
 }
+#endif	/* HAVE_NOTIFY_FD */
 
 void
 drmmode_wait_for_event(ScrnInfoPtr pScrn)
@@ -1517,11 +1530,15 @@ drmmode_screen_init(ScreenPtr pScreen)
 	drmmode->event_context.version = DRM_EVENT_CONTEXT_VERSION;
 	drmmode->event_context.page_flip_handler = drmmode_flip_handler;
 
+#if HAVE_NOTIFY_FD
+	SetNotifyFd(drmmode->fd, drmmode_notify_fd, X_NOTIFY_READ, pScrn);
+#else
 	AddGeneralSocket(drmmode->fd);
 
 	/* Register a wakeup handler to get informed on DRM events */
 	RegisterBlockAndWakeupHandlers((BlockHandlerProcPtr)NoopDDA,
 			drmmode_wakeup_handler, pScrn);
+#endif
 
 	return TRUE;
 }
@@ -1535,10 +1552,14 @@ drmmode_screen_fini(ScreenPtr pScreen)
 
 	drmmode_uevent_fini(pScrn);
 
+#if HAVE_NOTIFY_FD
+	RemoveNotifyFd(drmmode->fd);
+#else
 	/* Register a wakeup handler to get informed on DRM events */
 	RemoveBlockAndWakeupHandlers((BlockHandlerProcPtr)NoopDDA,
 			drmmode_wakeup_handler, pScrn);
 	RemoveGeneralSocket(drmmode->fd);
+#endif
 
 	drmmode_remove_fb(pScrn);
 	fd_bo_del(pMsm->scanout);
