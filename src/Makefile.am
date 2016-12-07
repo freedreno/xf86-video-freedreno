@@ -2,7 +2,6 @@ AM_CFLAGS = \
 	@XORG_CFLAGS@ \
 	@XATRACKER_CFLAGS@ \
 	-Wall \
-	-Werror \
 	-I$(top_srcdir)/system-includes/ \
 	-I$(top_builddir)/
 
