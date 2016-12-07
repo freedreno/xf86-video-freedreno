@@ -183,7 +183,7 @@ extern Bool msmDebug;
 static inline unsigned int
 MSMAlignedStride(unsigned int width, unsigned int bitsPerPixel)
 {
-	const unsigned align = 32;
+	const unsigned align = 64;
 	unsigned int alignedWidth;
 	alignedWidth = (width + (align - 1)) & ~(align - 1);
 	return ((alignedWidth * bitsPerPixel) + 7) / 8;
